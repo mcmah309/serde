@@ -1,13 +1,13 @@
 import 'package:serde_json/serde_json.dart';
 import 'package:test/test.dart';
 
-// @Serde()
-// class X {
-//   int x;
+@Serde()
+class X {
+  int x;
 
-//   X(this.x);
-// }
+  X(this.x);
+}
 
 void main() {
-  // X.fromJson(X(1).toJson());
+  X.fromJson(X(1).toJson());
 }
