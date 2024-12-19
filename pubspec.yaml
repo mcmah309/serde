@@ -1,6 +1,6 @@
 name: serde_json
 description: Rust serde compatible Serializer Deserializer
-version: 0.0.1
+version: 0.0.2
 repository: https://github.com/mcmah309/serde_json
 
 environment:
