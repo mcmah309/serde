@@ -25,7 +25,6 @@ import 'package:macros/macros.dart';
 /// See also [JsonEncodable] and [JsonDecodable] if you only want either the
 /// `toJson` or `fromJson` functionality.
 macro class Serde
-    with _Shared, _FromJson, _ToJson
     implements ClassDeclarationsMacro, ClassDefinitionMacro {
   final bool encode;
   final bool decode;
@@ -37,6 +36,10 @@ macro class Serde
   @override
   Future<void> buildDeclarationsForClass(
       ClassDeclaration clazz, MemberDeclarationBuilder builder) async {
+    if(!encode && !decode){
+      return;
+    }
+
     final mapStringObject = await _setup(clazz, builder);
 
     if(encode && decode) {
@@ -57,6 +60,10 @@ macro class Serde
   @override
   Future<void> buildDefinitionForClass(
       ClassDeclaration clazz, TypeDefinitionBuilder builder) async {
+    if(!encode && !decode){
+      return;
+    }
+
     final introspectionData =
         await _SharedIntrospectionData.build(builder, clazz);
 
@@ -74,8 +81,8 @@ macro class Serde
   }
 }
 
-/// Shared logic for all macros which run in the declarations phase.
-mixin _Shared {
+  // Shared logic for all macros which run in the declarations phase.
+  //************************************************************************//
   /// Returns [type] as a [NamedTypeAnnotation] if it is one, otherwise returns
   /// `null` and emits relevant error diagnostics.
   NamedTypeAnnotation? _checkNamedType(TypeAnnotation type, Builder builder) {
@@ -120,10 +127,9 @@ mixin _Shared {
       NamedTypeAnnotationCode(name: object).asNullable
     ]);
   }
-}
 
-/// Shared logic for macros that want to generate a `fromJson` constructor.
-mixin _FromJson on _Shared {
+  // Shared logic for macros that want to generate a `fromJson` constructor.
+  //************************************************************************//
   /// Builds the actual `fromJson` constructor.
   Future<void> _buildFromJson(
       ClassDeclaration clazz,
@@ -170,7 +176,7 @@ mixin _FromJson on _Shared {
       return RawCode.fromParts([
         field.identifier,
         ' = ',
-        await _convertTypeFromJson(
+        await convertTypeFromJson(
             field.type,
             RawCode.fromParts([
               jsonParam,
@@ -240,7 +246,7 @@ mixin _FromJson on _Shared {
 
   /// Returns a [Code] object which is an expression that converts a JSON map
   /// (referenced by [jsonReference]) into an instance of type [type].
-  Future<Code> _convertTypeFromJson(
+  Future<Code> convertTypeFromJson(
       TypeAnnotation rawType,
       Code jsonReference,
       DefinitionBuilder builder,
@@ -277,7 +283,7 @@ mixin _FromJson on _Shared {
             ' as ',
             introspectionData.jsonListCode,
             ') ',
-            await _convertTypeFromJson(type.typeArguments.single,
+            await convertTypeFromJson(type.typeArguments.single,
                 RawCode.fromString('item'), builder, introspectionData),
             ']',
           ]);
@@ -289,7 +295,7 @@ mixin _FromJson on _Shared {
             ' as ',
             introspectionData.jsonListCode,
             ')',
-            await _convertTypeFromJson(type.typeArguments.single,
+            await convertTypeFromJson(type.typeArguments.single,
                 RawCode.fromString('item'), builder, introspectionData),
             '}',
           ]);
@@ -303,7 +309,7 @@ mixin _FromJson on _Shared {
             ' as ',
             introspectionData.jsonMapCode,
             ').entries) key: ',
-            await _convertTypeFromJson(type.typeArguments.last,
+            await convertTypeFromJson(type.typeArguments.last,
                 RawCode.fromString('value'), builder, introspectionData),
             '}',
           ]);
@@ -371,10 +377,9 @@ mixin _FromJson on _Shared {
       ' json);',
     ]));
   }
-}
 
-/// Shared logic for macros that want to generate a `toJson` method.
-mixin _ToJson on _Shared {
+  // Shared logic for macros that want to generate a `toJson` method.
+  //************************************************************************//
   /// Builds the actual `toJson` method.
   Future<void> _buildToJson(
       ClassDeclaration clazz,
@@ -449,7 +454,7 @@ mixin _ToJson on _Shared {
         "json[r'",
         field.identifier.name,
         "'] = ",
-        await _convertTypeToJson(
+        await convertTypeToJson(
             field.type,
             RawCode.fromParts([
               field.identifier,
@@ -521,7 +526,7 @@ mixin _ToJson on _Shared {
   ///
   /// Null checks will be inserted if [rawType] is  nullable, unless
   /// [omitNullCheck] is `true`.
-  Future<Code> _convertTypeToJson(
+  Future<Code> convertTypeToJson(
       TypeAnnotation rawType,
       Code valueReference,
       DefinitionBuilder builder,
@@ -557,7 +562,7 @@ mixin _ToJson on _Shared {
             '[ for (final item in ',
             valueReference,
             ') ',
-            await _convertTypeToJson(type.typeArguments.single,
+            await convertTypeToJson(type.typeArguments.single,
                 RawCode.fromString('item'), builder, introspectionData),
             ']',
           ]);
@@ -569,7 +574,7 @@ mixin _ToJson on _Shared {
             '(:key, :value) in ',
             valueReference,
             '.entries) key: ',
-            await _convertTypeToJson(type.typeArguments.last,
+            await convertTypeToJson(type.typeArguments.last,
                 RawCode.fromString('value'), builder, introspectionData),
             '}',
           ]);
@@ -617,7 +622,8 @@ mixin _ToJson on _Shared {
       ' toJson();',
     ]));
   }
-}
+
+//************************************************************************//
 
 /// This data is collected asynchronously, so we only want to do it once and
 /// share that work across multiple locations.
