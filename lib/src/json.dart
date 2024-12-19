@@ -26,31 +26,31 @@ import 'package:macros/macros.dart';
 /// `toJson` or `fromJson` functionality.
 macro class Serde
     implements ClassDeclarationsMacro, ClassDefinitionMacro {
-  final bool encode;
-  final bool decode;
+  final bool toJson;
+  final bool fromJson;
 
-  const Serde({this.encode = true, this.decode = true});
+  const Serde({this.toJson = true, this.fromJson = true});
 
   /// Declares the `fromJson` constructor and `toJson` method, but does not
   /// implement them.
   @override
   Future<void> buildDeclarationsForClass(
       ClassDeclaration clazz, MemberDeclarationBuilder builder) async {
-    if(!encode && !decode){
+    if(!toJson && !fromJson){
       return;
     }
 
     final mapStringObject = await _setup(clazz, builder);
 
-    if(encode && decode) {
+    if(toJson && fromJson) {
       await (
         _declareFromJson(clazz, builder, mapStringObject),
         _declareToJson(clazz, builder, mapStringObject),
       ).wait;
     }
-    else if(encode) {
+    else if(toJson) {
       await _declareToJson(clazz, builder, mapStringObject);
-    } else if(decode) {
+    } else if(fromJson) {
       await _declareFromJson(clazz, builder, mapStringObject);
     }
   }
@@ -60,22 +60,22 @@ macro class Serde
   @override
   Future<void> buildDefinitionForClass(
       ClassDeclaration clazz, TypeDefinitionBuilder builder) async {
-    if(!encode && !decode){
+    if(!toJson && !fromJson){
       return;
     }
 
     final introspectionData =
         await _SharedIntrospectionData.build(builder, clazz);
 
-    if(encode && decode) {
+    if(toJson && fromJson) {
       await (
         _buildFromJson(clazz, builder, introspectionData),
         _buildToJson(clazz, builder, introspectionData),
       ).wait;
     }
-    else if(encode) {
+    else if(toJson) {
       await _buildToJson(clazz, builder, introspectionData);
-    } else if(decode) {
+    } else if(fromJson) {
       await _buildFromJson(clazz, builder, introspectionData);
     }
   }
